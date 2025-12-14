@@ -1,12 +1,13 @@
 #pragma once
+#include "button.h" // Nécessaire pour l'énumération ButtonEvent
 
 void encoder_init(int pinA, int pinB, int pinSW);
 
-// À appeler à chaque loop() - Requis uniquement pour la détection de clic (anti-rebond logiciel)
+// À appeler à chaque loop() (nécessaire pour le polling du bouton de l'encodeur)
 void encoder_update();
 
-// -1, 0, +1 selon la rotation depuis le dernier appel
+// Rotation : -1, 0, +1
 int encoder_getDelta();
 
-// true une seule fois quand un clic court vient d’être détecté
-bool encoder_wasClicked();
+// Événements de clic complexe (via le module button)
+ButtonEvent encoder_getSwitchEvent();

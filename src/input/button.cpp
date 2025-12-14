@@ -1,94 +1,109 @@
 #include "input/button.h"
 #include <Arduino.h>
+#include <stdlib.h> // Pour malloc/free
 
 // --- Constantes de temps ---
-// Doivent être définies ici pour être accessibles par la fonction d'implémentation
-#define DEBOUNCE_DELAY      50      // ms
-#define DOUBLE_CLICK_DELAY  200     // ms
-#define LONG_PRESS_DELAY    1000    // ms
+#define DEBOUNCE_DELAY      50UL    // ms
+#define DOUBLE_CLICK_DELAY  200UL   // ms
+#define LONG_PRESS_DELAY    1000UL  // ms
 
-// --- Variables d'état par bouton ---
+// Définition interne de la structure de contexte
+struct ButtonContext {
+    int pin;
+    
+    // Variables de la machine à états
+    bool last_button_state;
+    bool current_button_state;
+    unsigned long last_debounce_time;
+    unsigned long press_start_time;
+    unsigned long last_click_time;
+    ButtonEvent event_detected;
+};
 
-// Un structure ou une classe serait préférable, mais pour la simplicité et
-// puisque nous n'avons qu'un seul bouton (A6), nous utilisons des statics
-// pour le moment. Nous allons adapter pour être générique si le besoin se présente.
-// Pour l'instant, on implémente pour le bouton A6.
 
-static int button_pin = -1;
+ButtonContext* button_create(int pin) {
+    ButtonContext* context = (ButtonContext*)malloc(sizeof(ButtonContext));
 
-static bool last_button_state = HIGH;
-static bool current_button_state = HIGH;
-
-static unsigned long last_debounce_time = 0;
-static unsigned long press_start_time = 0;
-static unsigned long last_click_time = 0;
-
-static ButtonEvent event_detected = BUTTON_NONE;
-
-void button_init(int pin) {
-    button_pin = pin;
-    // Le pinMode est déjà configuré en INPUT_PULLUP dans main.cpp
-}
-
-void button_update() {
-    if (button_pin == -1) return;
-
-    // 1. Lecture de l'état physique du bouton (LOW = appuyé)
-    int reading = digitalRead(button_pin);
-
-    // 2. Anti-rebond (Debounce)
-    if (reading != last_button_state) {
-        last_debounce_time = millis();
+    if (context == NULL) {
+        return NULL; // Échec de l'allocation
     }
 
-    if ((millis() - last_debounce_time) > DEBOUNCE_DELAY) {
-        // Le nouvel état est stable
-        if (reading != current_button_state) {
-            current_button_state = reading;
+    // Initialisation de l'état
+    context->pin = pin;
+    context->last_button_state = HIGH;
+    context->current_button_state = HIGH;
+    context->last_debounce_time = 0;
+    context->press_start_time = 0;
+    context->last_click_time = 0;
+    context->event_detected = BUTTON_NONE;
+    
+    return context;
+}
 
-            if (current_button_state == LOW) {
-                // --- Début d'appui stable ---
-                press_start_time = millis();
+void button_update(ButtonContext* context) {
+    if (context == NULL) return;
+
+    int reading = digitalRead(context->pin);
+
+    // 1. Anti-rebond (Debounce)
+    if (reading != context->last_button_state) {
+        context->last_debounce_time = millis();
+    }
+
+    if ((millis() - context->last_debounce_time) > DEBOUNCE_DELAY) {
+        // Le nouvel état est stable
+        if (reading != context->current_button_state) {
+            context->current_button_state = reading;
+
+            if (context->current_button_state == LOW) {
+                // Début d'appui stable
+                context->press_start_time = millis();
 
             } else {
-                // --- Relâchement stable ---
-                unsigned long press_duration = millis() - press_start_time;
-
+                // Relâchement stable
+                unsigned long press_duration = millis() - context->press_start_time;
+                
+                // Si l'événement long press n'a pas été détecté (durée < LONG_PRESS_DELAY)
                 if (press_duration < LONG_PRESS_DELAY) {
-                    // Clic court ou double-clic
+                    
+                    if ((millis() - context->last_click_time) < DOUBLE_CLICK_DELAY) {
+                        // Double-clic
+                        context->event_detected = BUTTON_DOUBLE_CLICK;
+                        context->last_click_time = 0; 
 
-                    if ((millis() - last_click_time) < DOUBLE_CLICK_DELAY) {
-                        // Clic dans la fenêtre du double-clic
-                        event_detected = BUTTON_DOUBLE_CLICK;
-                        last_click_time = 0; // Réinitialiser pour éviter un triple-clic
                     } else {
-                        // Premier clic d'une séquence ou simple clic
-                        last_click_time = millis();
-                        event_detected = BUTTON_SINGLE_CLICK;
+                        // Simple clic (ou premier clic)
+                        context->last_click_time = millis();
+                        context->event_detected = BUTTON_SINGLE_CLICK;
                     }
                 }
-                // Si la durée est > LONG_PRESS_DELAY, l'événement long press a déjà été détecté
-                // et l'événement single/double click n'est pas généré.
             }
         }
     }
 
-    // 3. Détection de la pression longue (doit être checké pendant l'appui)
-    if (current_button_state == LOW && press_start_time != 0) {
-        if ((millis() - press_start_time) >= LONG_PRESS_DELAY) {
-            if (event_detected != BUTTON_LONG_PRESS) {
-                event_detected = BUTTON_LONG_PRESS;
-                // Empêcher la détection d'un double-clic après un long press
-                last_click_time = 0; 
+    // 2. Détection de la pression longue
+    if (context->current_button_state == LOW && context->press_start_time != 0) {
+        if ((millis() - context->press_start_time) >= LONG_PRESS_DELAY) {
+            if (context->event_detected != BUTTON_LONG_PRESS) {
+                context->event_detected = BUTTON_LONG_PRESS;
+                // Empêcher la détection d'un clic court/double après un long press
+                context->last_click_time = 0; 
             }
         }
     }
 
-    last_button_state = reading;
+    context->last_button_state = reading;
 }
 
-ButtonEvent button_getEvent() {
-    ButtonEvent current_event = event_detected;
-    event_detected = BUTTON_NONE; // Consommer l'événement
+ButtonEvent button_getEvent(ButtonContext* context) {
+    if (context == NULL) return BUTTON_NONE;
+    ButtonEvent current_event = context->event_detected;
+    context->event_detected = BUTTON_NONE; // Consommer l'événement
     return current_event;
+}
+
+void button_destroy(ButtonContext* context) {
+    if (context != NULL) {
+        free(context);
+    }
 }
