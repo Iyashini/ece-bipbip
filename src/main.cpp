@@ -4,8 +4,8 @@
 #include <Adafruit_SSD1306.h>
 
 // Modules d'affichage
-#include "display/animation.h" // Importe le prototype
-#include "display/menu.h"      // Importe les prototypes
+#include "display/animation.h" 
+#include "display/menu.h"      
 
 // Modules d'entrée
 #include "input/encoder.h" 
@@ -23,7 +23,8 @@ const int PIN_LED_R = 5;
 const int PIN_LED_G = 6;
 const int PIN_LED_B = 9;
 
-const int PIN_LED_VERTE = 7;
+// CORRECTION CRITIQUE : La LED Verte est sur A0, pas D7.
+const int PIN_LED_VERTE = A0; 
 const int PIN_BUZZER = 10; 
 
 // Pins NRF24 (D7 et D8)
@@ -50,8 +51,8 @@ void setup() {
     // Initialisation I2C
     Wire.begin(); 
     
-    // Adresse I2C : Test de 0x3D (si 0x3C ne marche pas)
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3D); 
+    // CORRECTION CRITIQUE : Utilisation de l'adresse I2C 0x3C (confirmée par votre code fonctionnel)
+    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); 
     
     display.clearDisplay();
     display.display();
@@ -67,9 +68,15 @@ void setup() {
     pinMode(PIN_LED_G, OUTPUT);
     pinMode(PIN_LED_B, OUTPUT);
     
-    // La pin D7 (PIN_LED_VERTE) est laissée sans pinMode() pour éviter le conflit avec I2C/RF24.
+    // Ajout du pinMode pour A0, maintenant que nous avons résolu le conflit D7.
+    pinMode(PIN_LED_VERTE, OUTPUT);
     
     pinMode(PIN_BUZZER, OUTPUT);
+    
+    // NRF24 pins (D7, D8) sont laissées sans pinMode pour être gérées par la lib RF24.
+    // Votre code fonctionnel les met en OUTPUT, mais ce n'est pas nécessaire ici.
+    // pinMode(PIN_RF24_CE, OUTPUT);
+    // pinMode(PIN_RF24_CSN, OUTPUT);
 
     // Initialisation des modules d'entrée
     encoder_init(PIN_ENC_A, PIN_ENC_B, PIN_ENC_SW); 
