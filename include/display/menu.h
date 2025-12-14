@@ -1,6 +1,6 @@
 #pragma once
 #include <Adafruit_SSD1306.h>
-#include "input/button.h" // Inclus pour l'événement de bouton
+#include "input/encoder.h" // Inclus pour l'événement de bouton
 
 // Constantes menu
 extern const int MENU_SIZE;
