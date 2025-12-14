@@ -92,3 +92,31 @@ void setup() {
     delay(300);
     afficherMenu(display);
 }
+
+// ... (code setup avant initialisation des modules)
+
+    // Initialisation des modules
+    encoder_init(PIN_ENC_A, PIN_ENC_B, PIN_ENC_SW);
+    button_init(PIN_BUTTON); // NOUVEAU : Initialisation du bouton A6
+    
+    animationDemarrage(display);
+// ...
+
+// =============================
+//   BOUCLE PRINCIPALE
+// =============================
+void loop() {
+    // Mise à jour de l'encodeur (pour l'anti-rebond du bouton si implémenté)
+    encoder_update(); 
+
+    // NOUVEAU : Mise à jour du bouton A6
+    button_update(); 
+
+    // Exemples d'utilisation des inputs (à intégrer à la logique menu/état)
+    // ... (Logique encoder inchangée)
+
+    ButtonEvent btn_event = button_getEvent(); // NOUVEAU
+    if (btn_event != BUTTON_NONE) {
+        // Logique spécifique au bouton A6 (par exemple, pour les messages)
+    }
+}
