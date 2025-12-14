@@ -4,13 +4,10 @@
 #include <string.h> 
 
 // Caractère de suppression (à afficher dans le clavier)
-const char DELETE_CHAR = 127; 
+const char DELETE_CHAR = 100; 
 const char SPACE_CHAR = ' ';
 
 // --- Définition des 4 modes de clavier ---
-// Le caractère ' ' (Espace) est omis ici car géré par le bouton A6.
-// Le caractère 127 (DELETE_CHAR) est le premier élément pour une sélection rapide.
-
 const char* KB_CHARS[KB_MODE_COUNT] = {
     // 0. Minuscule (AZERTY)
     "\x7F" "azertyuiopqsdfghjklmwxcvbn", 
@@ -30,6 +27,7 @@ static enum KeyboardMode currentMode = KB_AZERTY_LOWER;
 
 
 void send_message_init() {
+    // Réinitialise le buffer de message et l'état
     memset(messageBuffer, 0, MAX_MESSAGE_LENGTH); 
     messageBuffer[0] = '\0'; 
     cursorIndex = 0;
@@ -44,11 +42,11 @@ void send_message_drawScreen(Adafruit_SSD1306 &display) {
     display.setTextSize(1);
     display.setTextColor(WHITE);
     
-    // 1. ZONE DE TEXTE (2 lignes)
+    // 1. ZONE DE TEXTE 
     display.setCursor(5, 5);
     display.print("MSG: ");
     
-    // Affichage du message avec défilement si nécessaire (Zone de 20 caractères)
+    // Affichage avec défilement
     int start_char = 0;
     int visible_len = 20; 
     
@@ -60,17 +58,15 @@ void send_message_drawScreen(Adafruit_SSD1306 &display) {
         display.print(messageBuffer[start_char + i]);
     }
     
-    // Curseur de saisie (petit rectangle clignotant)
+    // Curseur de saisie clignotant
     if ((millis() % 1000) < 500) {
-        // La position du curseur est basée sur le nombre de caractères affichés
-        int current_pos = 5 + (cursorIndex - start_char) * 6; // 6 pixels par caractère
+        int current_pos = 5 + (cursorIndex - start_char) * 6; 
         display.fillRect(current_pos, 13, 5, 2, WHITE);
     }
     
-    // 2. Ligne de statut (Curseur/Mode)
+    // 2. Ligne de statut (Mode)
     display.setCursor(5, 25);
     display.print("Mode: ");
-    // CORRECTION W-switch: Ajout d'un default pour gérer KB_MODE_COUNT
     switch (currentMode) {
         case KB_AZERTY_LOWER: display.print("AZERTY min"); break;
         case KB_AZERTY_UPPER: display.print("AZERTY MAJ"); break;
@@ -85,13 +81,12 @@ void send_message_drawScreen(Adafruit_SSD1306 &display) {
     display.print(")");
 
 
-    // 3. CLAVIER (Affiche la sélection courante)
+    // 3. CLAVIER (Affichage du caractère sélectionné)
     const char* currentKB = KB_CHARS[currentMode];
     
     display.setTextSize(2); 
-    display.setCursor(30, 40); // Centré
+    display.setCursor(30, 40); 
     
-    // Affichage des chevrons
     display.print(">");
     
     // Si c'est le caractère de suppression
@@ -108,19 +103,16 @@ void send_message_drawScreen(Adafruit_SSD1306 &display) {
 
 void send_message_handleInput(int *currentScreen, ButtonContext* external_button) {
     const char* currentKB = KB_CHARS[currentMode];
-    size_t modeLength = strlen(currentKB); // Unsigned size_t
+    size_t modeLength = strlen(currentKB); 
 
     // --- 1. Gestion de la rotation (Sélection du caractère) ---
     int delta = encoder_getDelta();
     if (delta != 0) {
         charIndexInMode += delta;
 
-        // Le modulo doit inclure l'index 0 (DELETE_CHAR)
         if (charIndexInMode < 0) {
-            // Pas de warning ici car 0 est comparé à charIndexInMode (signed)
             charIndexInMode = (int)modeLength - 1; 
         } 
-        // CORRECTION W-sign-compare : Cast de modeLength à int
         else if (charIndexInMode >= (int)modeLength) { 
             charIndexInMode = 0;
         }
@@ -144,10 +136,8 @@ void send_message_handleInput(int *currentScreen, ButtonContext* external_button
             // ACTION: Saisir le caractère
             messageBuffer[cursorIndex] = selectedChar;
             cursorIndex++;
-            messageBuffer[cursorIndex] = '\0'; // Terminateur
+            messageBuffer[cursorIndex] = '\0'; 
         }
-        
-        // Réinitialise la sélection pour la fluidité
         charIndexInMode = 1; 
 
     } else if (enc_event == BUTTON_LONG_PRESS) {
@@ -157,11 +147,10 @@ void send_message_handleInput(int *currentScreen, ButtonContext* external_button
         } else if (currentMode == KB_AZERTY_UPPER) {
             currentMode = KB_AZERTY_LOWER;
         }
-        charIndexInMode = 1; // Commence après DEL
+        charIndexInMode = 1; 
         
     } else if (enc_event == BUTTON_DOUBLE_CLICK) {
         // Double Clic Encodeur : Rotation des claviers 
-        
         if (currentMode == KB_AZERTY_LOWER || currentMode == KB_AZERTY_UPPER) {
             currentMode = KB_SYMBOLS_ACCENTS;
         } else if (currentMode == KB_SYMBOLS_ACCENTS) {
@@ -169,7 +158,6 @@ void send_message_handleInput(int *currentScreen, ButtonContext* external_button
         } else if (currentMode == KB_NUMBERS) {
             currentMode = KB_AZERTY_LOWER;
         }
-        
         charIndexInMode = 1;
     } 
 
