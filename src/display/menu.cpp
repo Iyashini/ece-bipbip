@@ -1,41 +1,68 @@
 #include "display/menu.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include "input/encoder.h" // Ajout de l'inclusion nécessaire pour utiliser l'encodeur
 
 const char* menuItems[] = {
-    "Envoyer un message",
-    "Messages recus",
-    "Parametres"
+    "1. Envoyer un message",
+    "2. Messages recus",
+    "3. Parametres"
 };
 
-const int MENU_SIZE = 3;
+const int MENU_SIZE = sizeof(menuItems) / sizeof(menuItems[0]); 
 int menuIndex = 0;
 
 void afficherMenu(Adafruit_SSD1306 &display) {
     display.clearDisplay();
-
-    // Encadré général
-    display.drawRect(0, 0, 128, 64, WHITE);
-
-    // Titre
-    display.setCursor(40, 2);
+    display.setTextSize(1);
     display.setTextColor(WHITE);
-    display.print("Accueil");
 
-    // Items
     for (int i = 0; i < MENU_SIZE; i++) {
-        bool selected = (i == menuIndex);
-
-        if (selected) {
-            display.fillRect(2, 15 * i + 12, 124, 13, WHITE);
-            display.setTextColor(BLACK);
-        } else {
+        display.setCursor(0, i * 15);
+        
+        if (i == menuIndex) {
+            display.setTextColor(BLACK, WHITE); // Inverser les couleurs
+            display.print(">");
+            display.print(menuItems[i]);
             display.setTextColor(WHITE);
+        } else {
+            display.print(" ");
+            display.print(menuItems[i]);
         }
+    }
+    display.display();
+}
 
-        display.setCursor(5, 15 * i + 15);
-        display.print(menuItems[i]);
+// DÉFINITION DE LA FONCTION MANQUANTE
+void menu_handleInput(Adafruit_SSD1306 &display, int *currentScreen) {
+    // 1. Gestion de la rotation de l'encodeur (Navigation)
+    int delta = encoder_getDelta();
+    bool redraw = false;
+
+    if (delta != 0) {
+        menuIndex += delta;
+
+        // Limiter l'index de manière circulaire
+        if (menuIndex < 0) {
+            menuIndex = MENU_SIZE - 1;
+        } else if (menuIndex >= MENU_SIZE) {
+            menuIndex = 0;
+        }
+        redraw = true;
     }
 
-    display.display();
+    // 2. Gestion du clic de l'encodeur (Sélection)
+    ButtonEvent enc_event = encoder_getSwitchEvent();
+    
+    if (enc_event == BUTTON_SINGLE_CLICK) {
+        // Validation : Change l'état de l'écran 
+        // currentScreen (0) devient 1, 2, ou 3
+        *currentScreen = menuIndex + 1; 
+        redraw = true;
+    }
+    
+    // 3. Affichage si une action a eu lieu
+    if (redraw) {
+        afficherMenu(display);
+    }
 }
