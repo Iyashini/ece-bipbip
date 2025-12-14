@@ -4,7 +4,7 @@
 #include <string.h> 
 
 // Caractère de suppression (à afficher dans le clavier)
-const char DELETE_CHAR = 100; 
+const char DELETE_CHAR = 1; 
 const char SPACE_CHAR = ' ';
 
 // --- Définition des 4 modes de clavier ---

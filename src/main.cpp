@@ -7,6 +7,7 @@
 #include "display/animation.h" // Maintenant corrigé
 #include "display/menu.h"      // Maintenant corrigé
 #include "display/send_message.h" // Maintenant corrigé
+#include "display/settings.h"    // Maintenant corrigé
 
 // Modules d'entrée
 #include "input/encoder.h" 
@@ -39,8 +40,13 @@ Adafruit_SSD1306 display(128, 64, &Wire);
 // État interface : 0 = Menu Principal
 int currentScreen = 0;    
 
+// État du menu (pour les sous-menus dans les paramètres)
+int currentMenu = 1;
+
 // Contexte pour le bouton externe (A6)
 static ButtonContext* external_button = NULL; 
+
+
 
 
 // =============================
@@ -74,8 +80,11 @@ void setup() {
 
     // Initialisation des modules d'entrée
     encoder_init(PIN_ENC_A, PIN_ENC_B, PIN_ENC_SW); 
-    external_button = button_create(PIN_BUTTON);    
+    external_button = button_create(PIN_BUTTON);
     
+    send_message_init();
+    settings_init();
+
     // Démarrage et affichage initial
     animationDemarrage(display); 
     delay(300);
@@ -110,6 +119,32 @@ void loop() {
             send_message_drawScreen(display);
             break;
 
+        case 2:
+            currentMenu=0;
+            // break;
+            switch (currentMenu) {
+                case 0:
+                    settings_handleInput(&currentMenu, external_button);
+                    settings_drawScreen(display);
+                break;
+
+                case 1:
+                    edit_nrf24_channel_handleInput(&currentMenu, external_button);
+                    edit_nrf24_channel_drawScreen(display);
+                break;
+
+                case 2:
+                    edit_ringtone_handleInput(&currentMenu, external_button);
+                    edit_ringtone_drawScreen(display);
+                break;
+
+                case 3:
+                    edit_pseudo_handleInput(&currentMenu, external_button);
+                    edit_pseudo_drawScreen(display);
+                break;
+            }
+            break;
+    
         default:
             // Tout autre état invalide ramène au menu
             currentScreen = 0;
@@ -117,3 +152,25 @@ void loop() {
             break;
     }
 }
+
+// switch (currentScreen) {
+//         case 0: // Menu Principal
+//             menu_handleInput(display, &currentScreen);
+//             afficherMenu(display);                     
+//             break;
+        
+//         case 1: // Envoyer un message
+//             send_message_handleInput(&currentScreen, external_button);
+//             send_message_drawScreen(display);
+//             break;
+            
+//         // case 2: // Paramètres (Utilise le module settings dédié)
+//         //     settings_handleInput(&currentScreen, external_button);
+//         //     settings_drawScreen(display);
+//         //     break;
+
+//         default:
+//             currentScreen = 0;
+//             afficherMenu(display);
+//             break;
+//     }

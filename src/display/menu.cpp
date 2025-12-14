@@ -4,9 +4,9 @@
 #include "input/encoder.h" 
 
 const char* menuItems[] = {
-    "1. Envoyer un message",
-    "2. Messages recus",
-    "3. Parametres"
+    "Envoyer un message",
+    "Parametres",
+    "......"
 };
 
 const int MENU_SIZE = sizeof(menuItems) / sizeof(menuItems[0]); 
