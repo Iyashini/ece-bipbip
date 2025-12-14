@@ -8,14 +8,26 @@ static int last_state_A = HIGH;
 
 // Interruption pour la détection de rotation
 void encoder_ISR() {
+    // Lecture de l'état actuel de la broche A
     int new_state_A = digitalRead(PIN_A);
-    if (new_state_A != last_state_A) {
-        int state_B = digitalRead(PIN_B);
-        if (state_B != new_state_A) {
-            encoder_delta++; // Rotation horaire
-        } else {
-            encoder_delta--; // Rotation anti-horaire
+
+    // Vérifie qu'il y a eu un changement d'état réel sur A (anti-rebond minimal)
+    if (new_state_A != last_state_A) { 
+        
+        // CORRECTION DU DOUBLE-COMPTE : 
+        // Nous ne comptons la rotation que sur le front montant (A passe à HIGH).
+        if (new_state_A == HIGH) {
+            int state_B = digitalRead(PIN_B);
+            
+            // Détermine la direction
+            if (state_B != new_state_A) { // Si B est différent de A (donc B est LOW)
+                encoder_delta++; // Rotation horaire
+            } else { // Si B est égal à A (donc B est HIGH)
+                encoder_delta--; // Rotation anti-horaire
+            }
         }
+        
+        // Met à jour le dernier état pour la prochaine comparaison
         last_state_A = new_state_A;
     }
 }
@@ -26,7 +38,8 @@ void encoder_init(int pinA, int pinB, int pinSW) {
 
     switch_context = button_create(pinSW); 
     
-    // Attache l'interruption pour la rotation uniquement (D3)
+    // L'interruption doit rester sur CHANGE pour détecter les deux fronts, 
+    // car le filtrage est géré à l'intérieur de l'ISR.
     attachInterrupt(digitalPinToInterrupt(PIN_A), encoder_ISR, CHANGE);
 }
 
