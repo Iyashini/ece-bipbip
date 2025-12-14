@@ -108,6 +108,7 @@ void edit_nrf24_channel_drawScreen(Adafruit_SSD1306 &display) {
 void edit_nrf24_channel_handleInput(int *currentMenu, ButtonContext* external_button) {
     int delta = encoder_getDelta();
     ButtonEvent enc_event = encoder_getSwitchEvent();
+    ButtonEvent btn_event = button_getEvent(external_button);
     
     if (delta != 0) {
         current_channel += delta;
@@ -119,8 +120,9 @@ void edit_nrf24_channel_handleInput(int *currentMenu, ButtonContext* external_bu
         }
     }
 
-    if (enc_event == BUTTON_SINGLE_CLICK) {
-        *currentMenu = 1; 
+    if (btn_event == BUTTON_LONG_PRESS) {
+        *currentMenu = 0; 
+        settings_init();
     }
 }
 
@@ -152,7 +154,7 @@ void edit_ringtone_handleInput(int *currentMenu, ButtonContext* external_button)
     }
 
     if (enc_event == BUTTON_SINGLE_CLICK) {
-        *currentMenu = 1; 
+        *currentMenu = 0; 
     }
 }
 
@@ -173,6 +175,6 @@ void edit_pseudo_handleInput(int *currentMenu, ButtonContext* external_button) {
     ButtonEvent enc_event = encoder_getSwitchEvent();
     
     if (enc_event == BUTTON_SINGLE_CLICK) {
-        *currentMenu = 1; 
+        *currentMenu = 0; 
     }
 }

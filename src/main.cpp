@@ -41,7 +41,7 @@ Adafruit_SSD1306 display(128, 64, &Wire);
 int currentScreen = 0;    
 
 // État du menu (pour les sous-menus dans les paramètres)
-int currentMenu = 1;
+int currentMenu = 0;
 
 // Contexte pour le bouton externe (A6)
 static ButtonContext* external_button = NULL; 
@@ -104,10 +104,13 @@ void loop() {
     }
 
     // 2. Machine à états (Appel de fonction unique par cas)
+    
     switch (currentScreen) {
         case 0: // Menu Principal
+
             // Gère la sélection et change currentScreen
             menu_handleInput(display, &currentScreen);
+
             // Dessine l'écran
             afficherMenu(display);                     
             break;
@@ -120,7 +123,8 @@ void loop() {
             break;
 
         case 2:
-            currentMenu=0;
+            currentMenu = 1;
+
             // break;
             switch (currentMenu) {
                 case 0:
