@@ -1,31 +1,42 @@
 #include "display/menu.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include "input/encoder.h" // Ajout de l'inclusion nécessaire pour utiliser l'encodeur
+#include "input/encoder.h" 
 
+// Définition des éléments du menu
 const char* menuItems[] = {
     "1. Envoyer un message",
     "2. Messages recus",
     "3. Parametres"
 };
 
+// Calcule la taille du menu
 const int MENU_SIZE = sizeof(menuItems) / sizeof(menuItems[0]); 
-int menuIndex = 0;
+// Index initial de sélection
+int menuIndex = 0; 
 
+/**
+ * Affiche le menu principal sur l'écran OLED.
+ * Le menuIndex est utilisé pour inverser les couleurs de l'élément sélectionné.
+ */
 void afficherMenu(Adafruit_SSD1306 &display) {
     display.clearDisplay();
     display.setTextSize(1);
     display.setTextColor(WHITE);
 
     for (int i = 0; i < MENU_SIZE; i++) {
+        // Affiche chaque élément avec un décalage vertical
         display.setCursor(0, i * 15);
         
         if (i == menuIndex) {
-            display.setTextColor(BLACK, WHITE); // Inverser les couleurs
+            // Élément sélectionné : Texte noir sur fond blanc
+            display.setTextColor(BLACK, WHITE); 
             display.print(">");
             display.print(menuItems[i]);
+            // Réinitialise la couleur pour le reste
             display.setTextColor(WHITE);
         } else {
+            // Élément non sélectionné : Texte blanc sur fond noir
             display.print(" ");
             display.print(menuItems[i]);
         }
@@ -33,12 +44,14 @@ void afficherMenu(Adafruit_SSD1306 &display) {
     display.display();
 }
 
-// DÉFINITION DE LA FONCTION MANQUANTE
+/**
+ * Gère les entrées de l'encodeur (rotation et clic) pour la navigation.
+ * Met à jour menuIndex et currentScreen.
+ */
 void menu_handleInput(Adafruit_SSD1306 &display, int *currentScreen) {
     // 1. Gestion de la rotation de l'encodeur (Navigation)
     int delta = encoder_getDelta();
-    bool redraw = false;
-
+    
     if (delta != 0) {
         menuIndex += delta;
 
@@ -48,7 +61,7 @@ void menu_handleInput(Adafruit_SSD1306 &display, int *currentScreen) {
         } else if (menuIndex >= MENU_SIZE) {
             menuIndex = 0;
         }
-        redraw = true;
+        // L'affichage est géré dans loop() après cette fonction, pas besoin de redraw ici.
     }
 
     // 2. Gestion du clic de l'encodeur (Sélection)
@@ -56,13 +69,9 @@ void menu_handleInput(Adafruit_SSD1306 &display, int *currentScreen) {
     
     if (enc_event == BUTTON_SINGLE_CLICK) {
         // Validation : Change l'état de l'écran 
-        // currentScreen (0) devient 1, 2, ou 3
+        // 0 (Menu) devient 1, 2, ou 3
         *currentScreen = menuIndex + 1; 
-        redraw = true;
     }
     
-    // 3. Affichage si une action a eu lieu
-    if (redraw) {
-        afficherMenu(display);
-    }
+    // Note : Le cas BUTTON_DOUBLE_CLICK et BUTTON_LONG_PRESS n'est pas utilisé dans le menu.
 }
