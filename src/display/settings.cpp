@@ -33,7 +33,8 @@ const char* ringtone_names[] = {
 const char* setting_names[] = {
     "Canal NRF24",
     "Sonnerie",
-    "Pseudo"
+    "Pseudo",
+    "Retour"
 };
 const int SETTINGS_ITEM_COUNT = sizeof(setting_names) / sizeof(setting_names[0]);
 int setting_menuIndex = 0;
@@ -70,9 +71,10 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
   const ButtonEvent enc_event = encoder_getSwitchEvent();
   const ButtonEvent btn_event = (external_button != NULL) ? button_getEvent(external_button) : BUTTON_NONE;
 
-  // Long press = retour menu principal (optionnel) ou retour liste
+  // Long press = retour menu principal
   if (btn_event == BUTTON_LONG_PRESS) {
-    *currentMenu = 0;
+    *currentMenu = -1;
+    setting_menuIndex = 0;
     return;
   }
 
@@ -86,8 +88,14 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
   }
 
   if (enc_event == BUTTON_SINGLE_CLICK) {
-    // 0->1, 1->2, 2->3
-    *currentMenu = setting_menuIndex + 1;
+    if (setting_menuIndex == SETTINGS_ITEM_COUNT - 1) {
+      // Dernier élément : retour au menu principal
+      *currentMenu = -1;
+      setting_menuIndex = 0;
+    } else {
+      // 0->1, 1->2, 2->3
+      *currentMenu = setting_menuIndex + 1;
+    }
   }
 }
 
