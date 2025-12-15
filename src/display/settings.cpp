@@ -78,7 +78,7 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
   // Long press = retour menu principal
   if (btn_event == BUTTON_LONG_PRESS) {
     *currentMenu = -1;
-    setting_resetMenu();
+    settings_resetMenu();
     return;
   }
 
@@ -95,7 +95,7 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
     if (setting_menuIndex == SETTINGS_ITEM_COUNT - 1) {
       // Dernier élément : retour au menu principal
       *currentMenu = -1;
-      setting_resetMenu();
+      settings_resetMenu();
     } else {
       // 0->1, 1->2, 2->3
       *currentMenu = setting_menuIndex + 1;
@@ -125,10 +125,10 @@ void edit_nrf24_channel_handleInput(int *currentMenu, ButtonContext* external_bu
     if (delta != 0) {
         current_channel += delta;
 
-        if (current_channel < 0) {
-            current_channel = 0;
-        } else if (current_channel > 125) {
-            current_channel = 125;
+        if (current_channel < MIN_CHANNEL_VALUE) {
+            current_channel = MIN_CHANNEL_VALUE;
+        } else if (current_channel > MAX_CHANNEL_VALUE) {
+            current_channel = MAX_CHANNEL_VALUE;
         }
     }
 
@@ -161,8 +161,8 @@ void edit_ringtone_handleInput(int *currentMenu, ButtonContext* external_button)
 
         if (current_ringtone < 0) {
             current_ringtone = 0;
-        } else if (current_ringtone >= sizeof(ringtone_names) / sizeof(ringtone_names[0])) {
-            current_ringtone = sizeof(ringtone_names) / sizeof(ringtone_names[0]) - 1;
+        } else if (current_ringtone >= MAX_RINGTONES) {
+            current_ringtone = MAX_RINGTONES - 1;
         }
     }
 
