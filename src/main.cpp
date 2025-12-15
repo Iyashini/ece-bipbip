@@ -42,6 +42,7 @@ int currentScreen = 0;
 
 // État du menu (pour les sous-menus dans les paramètres)
 int currentMenu = 0;
+int lastScreen = -1;
 
 // Contexte pour le bouton externe (A6)
 static ButtonContext* external_button = NULL; 
@@ -98,7 +99,7 @@ void setup() {
 
 void loop() {
     // 1. Mise à jour des entrées (Polling de l'encodeur et du bouton)
-    encoder_update(); 
+    encoder_update();
     if (external_button != NULL) {
         button_update(external_button); 
     }
@@ -123,13 +124,29 @@ void loop() {
             break;
 
         case 2:
-            currentMenu = 1;
+            if (lastScreen != currentScreen) {
+                currentMenu = 0;
+            }
+
+            lastScreen = currentScreen;
+
+            if (currentMenu == -1) {
+                currentScreen = 0;
+                currentMenu = 0;
+                afficherMenu(display);
+                break;
+            }
 
             // break;
             switch (currentMenu) {
                 case 0:
                     settings_handleInput(&currentMenu, external_button);
                     settings_drawScreen(display);
+                    if (currentMenu == -1) {
+                        currentScreen = 0;
+                        currentMenu = 0;
+                        afficherMenu(display);
+                    }
                 break;
 
                 case 1:
