@@ -38,7 +38,7 @@ const int PIN_RF24_CSN = 8; // D8
 Adafruit_SSD1306 display(128, 64, &Wire);
 
 // État interface : 0 = Menu Principal
-int currentScreen = 0;    
+int currentScreen = 0;
 
 // État du menu (pour les sous-menus dans les paramètres)
 int currentMenu = 0;
@@ -110,10 +110,21 @@ void loop() {
     // 1. Mise à jour des entrées (Polling de l'encodeur et du bouton)
     encoder_update();
     if (external_button != NULL) {
-        button_update(external_button); 
+        button_update(external_button);
     }
 
-    // 2. Machine à états (Appel de fonction unique par cas)
+    // 2. Gestion des transitions d'écran (détection des changements)
+    if (currentScreen != lastScreen) {
+        if (currentScreen == 2) {
+            // Réinitialiser le sous-menu Paramètres à chaque entrée
+            currentMenu = 0;
+            settings_resetMenu();
+        }
+
+        lastScreen = currentScreen;
+    }
+
+    // 3. Machine à états (Appel de fonction unique par cas)
     
     switch (currentScreen) {
         case 0: // Menu Principal
@@ -133,13 +144,6 @@ void loop() {
             break;
 
         case 2:
-            if (lastScreen != currentScreen) {
-                currentMenu = 0;
-                settings_resetMenu();
-            }
-
-            lastScreen = currentScreen;
-
             if (currentMenu == -1) {
                 currentScreen = 0;
                 currentMenu = 0;
