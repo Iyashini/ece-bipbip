@@ -6,6 +6,9 @@
 #include "input/encoder.h"
 #include "input/button.h"
 #include "display/menu.h"
+#include "radio/radio.h" // Ajout de l'include radio
+
+// ... (Le reste des déclarations reste inchangé) ...
 
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 
@@ -38,28 +41,36 @@ void setup() {
     pinMode(10, OUTPUT);
     digitalWrite(10, LOW);
 
-    // OLED FIRST !!!
+    // 1. INITIALISATION CRITIQUE DE L'OLED
     Wire.begin();
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-        Serial.println("Erreur OLED");
-        while (1);
+    
+    // RETRAIT DU BLOCAGE: Nous continuons même si la détection échoue au cas où ce serait une erreur de timing.
+    bool oled_ok = display.begin(SSD1306_SWITCHCAPVCC, 0x3C); 
+
+    if (!oled_ok) {
+        Serial.println("Erreur OLED (0x3C). Programme continue.");
     }
 
     display.clearDisplay();
     display.setTextSize(1);
     display.setCursor(0,0);
-    display.println("OLED OK (Main)");
+    display.println("BIPBIP V0.9");
     display.display();
     delay(500);
 
+    // 2. INITIALISATION RADIO (Avant les autres I/O pour stabiliser D7/D8)
+    radio_init(); 
+
+    // 3. INITIALISATION DES ENTREES
     encoder_init(ENC_A, ENC_B);
     button_init(ENC_BTN);
 
+    // 4. INITIALISATION UI
     menu_init();
 }
 
 void loop() {
-
+    // ... (Le reste de la loop est inchangé) ...
     int delta = encoder_getDelta();
     bool clicked = button_wasPressed();
 
@@ -100,8 +111,13 @@ void loop() {
 
         if (clicked) {
             if (messageIndex < 31) {
+                // Ajouter le caractère au buffer
                 messageBuffer[messageIndex++] = charset[charIndex];
                 messageBuffer[messageIndex] = '\0';
+            } else {
+                // Buffer plein: Envoyer le message
+                radio_sendMessage(messageBuffer);
+                currentState = STATE_SENT;
             }
         }
         break;
