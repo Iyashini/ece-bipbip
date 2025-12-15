@@ -42,6 +42,7 @@ int currentScreen = 0;
 
 // État du menu (pour les sous-menus dans les paramètres)
 int currentMenu = 0;
+int lastScreen = -1;
 
 // Contexte pour le bouton externe (A6)
 static ButtonContext* external_button = NULL; 
@@ -56,8 +57,17 @@ void setup() {
     // Initialisation Wire et Display
     Wire.begin(); 
     
-    // Adresse I2C : Test de 0x3D
-    display.begin(SSD1306_SWITCHCAPVCC, 0x3C); 
+    // Adresse I2C : Test de 0x3C
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+        // Échec d'initialisation : on reste bloqué pour éviter un écran noir silencieux
+        pinMode(LED_BUILTIN, OUTPUT);
+        while (true) {
+            digitalWrite(LED_BUILTIN, HIGH);
+            delay(200);
+            digitalWrite(LED_BUILTIN, LOW);
+            delay(200);
+        }
+    }
     
     display.clearDisplay();
     display.display();
@@ -98,7 +108,7 @@ void setup() {
 
 void loop() {
     // 1. Mise à jour des entrées (Polling de l'encodeur et du bouton)
-    encoder_update(); 
+    encoder_update();
     if (external_button != NULL) {
         button_update(external_button); 
     }
@@ -123,13 +133,30 @@ void loop() {
             break;
 
         case 2:
-            currentMenu = 1;
+            if (lastScreen != currentScreen) {
+                currentMenu = 0;
+                settings_resetMenu();
+            }
+
+            lastScreen = currentScreen;
+
+            if (currentMenu == -1) {
+                currentScreen = 0;
+                currentMenu = 0;
+                afficherMenu(display);
+                break;
+            }
 
             // break;
             switch (currentMenu) {
                 case 0:
                     settings_handleInput(&currentMenu, external_button);
                     settings_drawScreen(display);
+                    if (currentMenu == -1) {
+                        currentScreen = 0;
+                        currentMenu = 0;
+                        afficherMenu(display);
+                    }
                 break;
 
                 case 1:

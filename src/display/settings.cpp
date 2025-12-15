@@ -5,8 +5,8 @@
 
 // --- Variables d'état Globales (Implémentation) ---
 // Ces valeurs sont les valeurs de configuration de l'appareil
-uint8_t current_channel = 76; // Canal NRF24 par défaut
-uint8_t current_ringtone = 0; // Sonnerie par défaut (index 0)
+int current_channel = 76; // Canal NRF24 par défaut
+int current_ringtone = 0;   // Sonnerie par défaut (index 0)
 char current_pseudo[MAX_PSEUDO_LENGTH + 1] = "BIPBIP";
 
 
@@ -33,7 +33,8 @@ const char* ringtone_names[] = {
 const char* setting_names[] = {
     "Canal NRF24",
     "Sonnerie",
-    "Pseudo"
+    "Pseudo",
+    "Retour"
 };
 const int SETTINGS_ITEM_COUNT = sizeof(setting_names) / sizeof(setting_names[0]);
 int setting_menuIndex = 0;
@@ -41,7 +42,11 @@ int setting_menuIndex = 0;
 void settings_init() {
     // Initialisation. Pour l'instant, les variables globales ont des valeurs par défaut
     // (Dans une version finale, on lirait ici la mémoire EEPROM).
-    
+
+}
+
+void settings_resetMenu() {
+    setting_menuIndex = 0;
 }
 
 void settings_drawScreen(Adafruit_SSD1306 &display) {
@@ -70,9 +75,10 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
   const ButtonEvent enc_event = encoder_getSwitchEvent();
   const ButtonEvent btn_event = (external_button != NULL) ? button_getEvent(external_button) : BUTTON_NONE;
 
-  // Long press = retour menu principal (optionnel) ou retour liste
+  // Long press = retour menu principal
   if (btn_event == BUTTON_LONG_PRESS) {
-    *currentMenu = 0;
+    *currentMenu = -1;
+    setting_resetMenu();
     return;
   }
 
@@ -86,8 +92,14 @@ void settings_handleInput(int *currentMenu, ButtonContext* external_button) {
   }
 
   if (enc_event == BUTTON_SINGLE_CLICK) {
-    // 0->1, 1->2, 2->3
-    *currentMenu = setting_menuIndex + 1;
+    if (setting_menuIndex == SETTINGS_ITEM_COUNT - 1) {
+      // Dernier élément : retour au menu principal
+      *currentMenu = -1;
+      setting_resetMenu();
+    } else {
+      // 0->1, 1->2, 2->3
+      *currentMenu = setting_menuIndex + 1;
+    }
   }
 }
 
@@ -108,7 +120,7 @@ void edit_nrf24_channel_drawScreen(Adafruit_SSD1306 &display) {
 void edit_nrf24_channel_handleInput(int *currentMenu, ButtonContext* external_button) {
     int delta = encoder_getDelta();
     ButtonEvent enc_event = encoder_getSwitchEvent();
-    ButtonEvent btn_event = button_getEvent(external_button);
+    ButtonEvent btn_event = (external_button != NULL) ? button_getEvent(external_button) : BUTTON_NONE;
     
     if (delta != 0) {
         current_channel += delta;
@@ -120,9 +132,9 @@ void edit_nrf24_channel_handleInput(int *currentMenu, ButtonContext* external_bu
         }
     }
 
-    if (btn_event == BUTTON_LONG_PRESS) {
-        *currentMenu = 0; 
-        settings_init();
+    if (btn_event == BUTTON_LONG_PRESS || enc_event == BUTTON_SINGLE_CLICK) {
+        *currentMenu = 0;
+        settings_resetMenu();
     }
 }
 
@@ -142,6 +154,7 @@ void edit_ringtone_drawScreen(Adafruit_SSD1306 &display) {
 void edit_ringtone_handleInput(int *currentMenu, ButtonContext* external_button) {
     int delta = encoder_getDelta();
     ButtonEvent enc_event = encoder_getSwitchEvent();
+    ButtonEvent btn_event = (external_button != NULL) ? button_getEvent(external_button) : BUTTON_NONE;
     
     if (delta != 0) {
         current_ringtone += delta;
@@ -153,8 +166,9 @@ void edit_ringtone_handleInput(int *currentMenu, ButtonContext* external_button)
         }
     }
 
-    if (enc_event == BUTTON_SINGLE_CLICK) {
-        *currentMenu = 0; 
+    if (enc_event == BUTTON_SINGLE_CLICK || btn_event == BUTTON_LONG_PRESS) {
+        *currentMenu = 0;
+        settings_resetMenu();
     }
 }
 
@@ -173,8 +187,10 @@ void edit_pseudo_drawScreen(Adafruit_SSD1306 &display) {
 
 void edit_pseudo_handleInput(int *currentMenu, ButtonContext* external_button) {
     ButtonEvent enc_event = encoder_getSwitchEvent();
-    
-    if (enc_event == BUTTON_SINGLE_CLICK) {
-        *currentMenu = 0; 
+    ButtonEvent btn_event = (external_button != NULL) ? button_getEvent(external_button) : BUTTON_NONE;
+
+    if (enc_event == BUTTON_SINGLE_CLICK || btn_event == BUTTON_LONG_PRESS) {
+        *currentMenu = 0;
+        settings_resetMenu();
     }
 }
